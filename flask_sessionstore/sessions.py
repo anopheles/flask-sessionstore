@@ -498,6 +498,8 @@ class SqlAlchemySessionInterface(SessionInterface):
         self.sql_session_model = Session
 
     def open_session(self, app, request):
+        if request.method == "OPTIONS":
+            return
         sid = request.cookies.get(app.session_cookie_name)
         if not sid:
             sid = self._generate_sid()
