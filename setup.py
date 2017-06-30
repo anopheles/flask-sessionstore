@@ -7,7 +7,6 @@ Server-side Session to your application.
 
 """
 from setuptools import setup
-from flask_sessionstore import __version__
 
 setup(
     name='Flask-Sessionstore',
