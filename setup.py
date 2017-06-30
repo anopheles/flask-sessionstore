@@ -11,7 +11,7 @@ from flask_sessionstore import __version__
 
 setup(
     name='Flask-Sessionstore',
-    version=__version__,
+    version='0.4.5',
     url='https://github.com/mcrowson/flask-sessionstore',
     license='BSD',
     author='Matthew Crowson',
