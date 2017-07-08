@@ -115,6 +115,8 @@ class RedisSessionInterface(SessionInterface):
         self.permanent = permanent
 
     def open_session(self, app, request):
+        if request.method == "OPTIONS":
+            return
         sid = request.cookies.get(app.session_cookie_name)
         if not sid:
             sid = self._generate_sid()
@@ -132,10 +134,11 @@ class RedisSessionInterface(SessionInterface):
 
         if not PY2 and not isinstance(sid, text_type):
             sid = sid.decode('utf-8', 'strict')
-        val = self.redis.get(self.key_prefix + sid)
-        if val is not None:
+        vals = self.redis.hgetall(self.key_prefix + sid)
+        if vals is not None:
             try:
-                data = self.serializer.loads(val)
+                data = {self.serializer.loads(key):
+                               self.serializer.loads(value) for key, value in vals.items()}
                 return self.session_class(data, sid=sid)
             except:
                 return self.session_class(sid=sid, permanent=self.permanent)
@@ -164,9 +167,12 @@ class RedisSessionInterface(SessionInterface):
         httponly = self.get_cookie_httponly(app)
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
-        val = self.serializer.dumps(dict(session))
-        self.redis.setex(name=self.key_prefix + session.sid, value=val,
-                         time=total_seconds(app.permanent_session_lifetime))
+
+        key_name = self.key_prefix + session.sid
+        self.redis.expire(key_name, total_seconds(app.permanent_session_lifetime))
+        for key, value in dict(session).items():
+            self.redis.hset(key_name, self.serializer.dumps(key), self.serializer.dumps(value))
+
         if self.use_signer:
             session_id = self._get_signer(app).sign(want_bytes(session.sid))
         else:
